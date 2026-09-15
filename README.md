@@ -15,21 +15,27 @@ simulación) y están desactualizados frente al modelo actual.
 Requiere JDK 17+ (probado con JDK 21, usa `record` y `switch` con patrones).
 
 ```bash
-cd PaqRoute-Planificador
 javac -d out src/paqroute/*.java
+java -cp out paqroute.Main
+```
+
+Los datos (36 meses de `ventas.aaaamm.txt`, 36 de `bloqueo.aamm.txt` y 18 de
+`mant.preventivo.aa.m1-m2.txt`) ya vienen incluidos en `data/ventas/`, `data/bloqueos/` y
+`data/mantenimiento/`. `Main` usa esas tres carpetas por **rutas relativas** al directorio desde
+el que se ejecuta el programa -- por eso hay que correr `java` parado en la raíz del repositorio
+(donde también está `src/`). Si quieres apuntar a otras carpetas (por ejemplo, un subconjunto con
+menos meses para probar más rápido), pásalas como argumentos:
+
+```bash
 java -cp out paqroute.Main "<carpeta ventas>" "<carpeta bloqueos>" "<carpeta mantenimiento>"
 ```
 
-Los tres argumentos son opcionales; si se omiten, `Main` usa por defecto las rutas de las
-carpetas de datos reales de la corrida de prueba (ver `Main.java`). `Main` lee todos los
-`ventas.aaaamm.txt` de la carpeta indicada, todos los `bloqueo.aamm.txt` y todos los
-`mant.preventivo.aa.m1-m2.txt`, y corre el escenario de colapso con ACS y con GRASP-VNS por
-separado, imprimiendo en qué momento colapsó cada uno y con qué desempeño acumulado hasta ahí
-(pedidos completados a tiempo, costo total, km recorridos, entregas parciales).
+`Main` corre el escenario de colapso con ACS y con GRASP-VNS por separado, imprimiendo en qué
+momento colapsó cada uno y con qué desempeño acumulado hasta ahí (pedidos completados a tiempo,
+costo total, km recorridos, entregas parciales, Ta promedio/máximo del algoritmo).
 
 Advertencia de rendimiento: correr los 36 meses completos (2026-2028, ~160,000 pedidos) toma
-del orden de 1 a 1.5 minutos por algoritmo. Para pruebas rápidas, apunta las carpetas a un
-subconjunto de archivos (p.ej. un solo mes) copiándolos a una carpeta aparte.
+del orden de 1 a 1.5 minutos por algoritmo.
 
 ## Estructura
 
@@ -52,4 +58,9 @@ src/paqroute/
   Simulador.java                   motor de la simulacion: avanza el reloj hasta el colapso
   ResultadoSimulacion.java         resumen de una corrida (momento de colapso, metricas acumuladas)
   Main.java                        corre el escenario de colapso con ambos algoritmos y compara
+
+data/
+  ventas/         ventas.aaaamm.txt (36 meses, 2026-01 a 2028-12)
+  bloqueos/       bloqueo.aamm.txt (36 meses)
+  mantenimiento/  mant.preventivo.aa.m1-m2.txt (18 archivos bimensuales)
 ```
