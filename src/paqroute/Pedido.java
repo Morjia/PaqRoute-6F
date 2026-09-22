@@ -1,5 +1,6 @@
 package paqroute;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 
 /**
@@ -21,6 +22,8 @@ public final class Pedido {
     public final LocalDateTime fechaLimite;
 
     public int cantidadPendiente;
+    /** Llegada de la ultima parte entregada; null mientras el pedido no este completo. */
+    public LocalDateTime horaCompletado;
 
     public Pedido(String idCliente, Punto ubicacion, int cantidadTotal,
                    LocalDateTime momentoLlegada, double horasLimite) {
@@ -31,6 +34,18 @@ public final class Pedido {
         this.horasLimite = horasLimite;
         this.fechaLimite = momentoLlegada.plusMinutes(Math.round(horasLimite * 60));
         this.cantidadPendiente = cantidadTotal;
+    }
+
+    /** Copia fresca (sin avance) con cantidad = ceil(cantidad * lambda); horario, ubicacion y plazo no cambian. */
+    public Pedido copiaEscalada(double lambda) {
+        int cantidad = lambda == 1.0 ? cantidadTotal : (int) Math.ceil(cantidadTotal * lambda - 1e-9);
+        return new Pedido(idCliente, ubicacion, cantidad, momentoLlegada, horasLimite);
+    }
+
+    /** Porcentaje del plazo consumido al completarse: (horaCompletado - llegada) / plazo * 100. */
+    public double consumoSlaPct() {
+        double minutos = Duration.between(momentoLlegada, horaCompletado).toSeconds() / 60.0;
+        return minutos / (horasLimite * 60.0) * 100.0;
     }
 
     public boolean completo() {

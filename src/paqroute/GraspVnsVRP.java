@@ -103,7 +103,11 @@ public final class GraspVnsVRP {
         for (Ruta ruta : estado.solucion.rutas) {
             int espacioLibre = ruta.vehiculo.tipo.capacidad - ruta.cargaTotal();
             if (espacioLibre <= 0) continue;
-            int cantidad = Math.min(restante, espacioLibre);
+            // La parada adicional sale del mismo almacen de despacho de la ruta: no puede pedir mas
+            // de lo que a ese almacen le queda.
+            int stockAlmacen = estado.stockLocal.getOrDefault(ruta.almacenDespacho.id, 0);
+            if (stockAlmacen <= 0) continue;
+            int cantidad = Math.min(Math.min(restante, espacioLibre), stockAlmacen);
             List<Entrega> tentativa = new ArrayList<>(ruta.secuencia);
             tentativa.add(new Entrega(p, cantidad));
             RutaUtil.Evaluacion antes = RutaUtil.evaluar(ruta.secuencia, ruta.vehiculo.tipo, ruta.almacenDespacho.ubicacion, ctx.horaActual, ctx.grafo);
@@ -119,8 +123,10 @@ public final class GraspVnsVRP {
 
         Almacen almacenCercano = almacenMasCercanoConStockLocal(estado, p.ubicacion);
         if (almacenCercano != null) {
+            int stockAlmacen = estado.stockLocal.getOrDefault(almacenCercano.id, 0);
             for (Vehiculo libre : estado.vehiculosLibresRestantes) {
-                int cantidad = Math.min(restante, libre.tipo.capacidad);
+                int cantidad = Math.min(Math.min(restante, libre.tipo.capacidad), stockAlmacen);
+                if (cantidad <= 0) continue;
                 RutaUtil.Evaluacion ev = RutaUtil.evaluar(List.of(new Entrega(p, cantidad)), libre.tipo,
                         almacenCercano.ubicacion, ctx.horaActual, ctx.grafo);
                 if (!ev.factible()) continue;
@@ -140,6 +146,8 @@ public final class GraspVnsVRP {
         if (elegida.rutaExistente != null) {
             elegida.rutaExistente.secuencia.add(new Entrega(p, elegida.cantidad));
             recalcularRuta(elegida.rutaExistente);
+            // La ruta ya existia y descuenta de su mismo almacen de despacho al sumar otra parada.
+            estado.stockLocal.merge(elegida.rutaExistente.almacenDespacho.id, -elegida.cantidad, Integer::sum);
         } else {
             Ruta nueva = new Ruta(elegida.vehiculoNuevaRuta, elegida.almacenNuevaRuta, ctx.horaActual);
             nueva.secuencia.add(new Entrega(p, elegida.cantidad));
@@ -204,6 +212,10 @@ public final class GraspVnsVRP {
                     int espacioLibre = destino.vehiculo.tipo.capacidad - destino.cargaTotal()
                             + (destino == origen ? entrega.cantidad : 0);
                     if (espacioLibre < entrega.cantidad) continue;
+                    // Si el destino despacha desde otro almacen, ese almacen debe tener stock libre
+                    // para la cantidad que se le sumaria (el origen la libera al perderla).
+                    boolean cambiaAlmacen = destino != origen && destino.almacenDespacho.id != origen.almacenDespacho.id;
+                    if (cambiaAlmacen && estado.stockLocal.getOrDefault(destino.almacenDespacho.id, 0) < entrega.cantidad) continue;
                     for (int j = 0; j <= destino.secuencia.size(); j++) {
                         if (destino == origen && (j == i || j == i + 1)) continue;
 
@@ -227,6 +239,10 @@ public final class GraspVnsVRP {
                             if (destino != origen) { destino.secuencia.clear(); destino.secuencia.addAll(nuevaDestino); }
                             recalcularRuta(origen);
                             if (destino != origen) recalcularRuta(destino);
+                            if (cambiaAlmacen) {
+                                estado.stockLocal.merge(origen.almacenDespacho.id, entrega.cantidad, Integer::sum);
+                                estado.stockLocal.merge(destino.almacenDespacho.id, -entrega.cantidad, Integer::sum);
+                            }
                             return true;
                         }
                     }
@@ -252,6 +268,15 @@ public final class GraspVnsVRP {
                         int cargaB = rutaB.cargaTotal() - ej.cantidad + ei.cantidad;
                         if (cargaA > rutaA.vehiculo.tipo.capacidad || cargaB > rutaB.vehiculo.tipo.capacidad) continue;
 
+                        // Si despachan de almacenes distintos, cada uno debe soportar su nueva demanda neta
+                        // (lo que pierde con ei/ej mas lo que gana con el otro).
+                        boolean cambiaAlmacen = rutaA.almacenDespacho.id != rutaB.almacenDespacho.id;
+                        if (cambiaAlmacen) {
+                            int netoA = estado.stockLocal.getOrDefault(rutaA.almacenDespacho.id, 0) + ei.cantidad - ej.cantidad;
+                            int netoB = estado.stockLocal.getOrDefault(rutaB.almacenDespacho.id, 0) + ej.cantidad - ei.cantidad;
+                            if (netoA < 0 || netoB < 0) continue;
+                        }
+
                         List<Entrega> nuevaA = new ArrayList<>(rutaA.secuencia); nuevaA.set(i, ej);
                         List<Entrega> nuevaB = new ArrayList<>(rutaB.secuencia); nuevaB.set(j, ei);
                         RutaUtil.Evaluacion evA = RutaUtil.evaluar(nuevaA, rutaA.vehiculo.tipo, rutaA.almacenDespacho.ubicacion, ctx.horaActual, ctx.grafo);
@@ -264,6 +289,10 @@ public final class GraspVnsVRP {
                             rutaA.secuencia.clear(); rutaA.secuencia.addAll(nuevaA);
                             rutaB.secuencia.clear(); rutaB.secuencia.addAll(nuevaB);
                             recalcularRuta(rutaA); recalcularRuta(rutaB);
+                            if (cambiaAlmacen) {
+                                estado.stockLocal.merge(rutaA.almacenDespacho.id, ei.cantidad - ej.cantidad, Integer::sum);
+                                estado.stockLocal.merge(rutaB.almacenDespacho.id, ej.cantidad - ei.cantidad, Integer::sum);
+                            }
                             return true;
                         }
                     }

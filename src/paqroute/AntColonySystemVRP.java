@@ -121,10 +121,14 @@ public final class AntColonySystemVRP {
             AperturaRuta apertura = buscarAperturaFactible(vehiculosLocal, stockLocal, restanteLocal);
             if (apertura == null) break;
 
+            // Todo lo que la ruta cargue (parada inicial + paradas adicionales) sale del mismo almacen;
+            // se limita a lo que ese almacen realmente tiene disponible en este momento.
+            int stockDisponibleAlmacen = stockLocal.get(apertura.almacen.id);
             vehiculosLocal.remove(apertura.vehiculo);
             stockLocal.merge(apertura.almacen.id, -apertura.cantidadInicial, Integer::sum);
 
-            Ruta ruta = construirRuta(apertura, restanteLocal);
+            Ruta ruta = construirRuta(apertura, restanteLocal, stockDisponibleAlmacen - apertura.cantidadInicial);
+            stockLocal.merge(apertura.almacen.id, -(ruta.cargaTotal() - apertura.cantidadInicial), Integer::sum);
             solucion.rutas.add(ruta);
         }
         return solucion;
@@ -139,14 +143,18 @@ public final class AntColonySystemVRP {
 
         for (Pedido semilla : ordenados) {
             if (restanteLocal.get(semilla) <= 0) continue;
-            Almacen almacen = almacenMasCercanoConStockLocal(semilla.ubicacion, stockLocal);
-            if (almacen == null) continue;
+            Almacen almacenAprox = almacenMasCercanoConStockLocal(semilla.ubicacion, stockLocal, 1);
+            if (almacenAprox == null) continue;
 
-            TipoVehiculo recomendado = AsignadorFlota.tipoRecomendado(semilla, almacen.ubicacion, ctx);
+            TipoVehiculo recomendado = AsignadorFlota.tipoRecomendado(semilla, almacenAprox.ubicacion, ctx);
             for (TipoVehiculo tipo : ordenPorCostoDesde(recomendado)) {
                 Vehiculo libre = vehiculosLocal.stream().filter(v -> v.tipo == tipo).findFirst().orElse(null);
                 if (libre == null) continue;
                 int cantidad = Math.min(restanteLocal.get(semilla), tipo.capacidad);
+                // El almacen debe tener stock suficiente para ESTA cantidad, no solo stock > 0
+                // (con lambda escalado, la carga puede superar lo que queda en el almacen mas cercano).
+                Almacen almacen = almacenMasCercanoConStockLocal(semilla.ubicacion, stockLocal, cantidad);
+                if (almacen == null) continue;
                 RutaUtil.Evaluacion ev = RutaUtil.evaluar(List.of(new Entrega(semilla, cantidad)), tipo,
                         almacen.ubicacion, ctx.horaActual, ctx.grafo);
                 if (ev.factible()) return new AperturaRuta(semilla, almacen, tipo, libre, cantidad);
@@ -164,18 +172,19 @@ public final class AntColonySystemVRP {
         return resultado.toArray(new TipoVehiculo[0]);
     }
 
-    private Almacen almacenMasCercanoConStockLocal(Punto punto, Map<Almacen.Id, Integer> stockLocal) {
+    private Almacen almacenMasCercanoConStockLocal(Punto punto, Map<Almacen.Id, Integer> stockLocal, int cantidadNecesaria) {
         Almacen mejor = null;
         int mejorDistancia = Integer.MAX_VALUE;
         for (Almacen a : ctx.almacenes) {
-            if (stockLocal.getOrDefault(a.id, 0) <= 0) continue;
+            if (stockLocal.getOrDefault(a.id, 0) < cantidadNecesaria) continue;
             int d = ctx.grafo.distanciaKm(punto, a.ubicacion);
             if (d < mejorDistancia) { mejorDistancia = d; mejor = a; }
         }
         return mejor;
     }
 
-    private Ruta construirRuta(AperturaRuta apertura, Map<Pedido, Integer> restanteLocal) {
+    /** {@code stockAlmacenRestante}: cuanto mas puede cargar esta ruta del mismo almacen ademas de la parada inicial. */
+    private Ruta construirRuta(AperturaRuta apertura, Map<Pedido, Integer> restanteLocal, int stockAlmacenRestante) {
         Ruta ruta = new Ruta(apertura.vehiculo, apertura.almacen, ctx.horaActual);
         List<Entrega> secuencia = new ArrayList<>();
         List<Pedido> visitados = new ArrayList<>();
@@ -183,12 +192,13 @@ public final class AntColonySystemVRP {
         int nodoActual = 0;
         int capacidadRestante = apertura.tipo.capacidad;
 
-        while (capacidadRestante > 0) {
+        while (capacidadRestante > 0 && stockAlmacenRestante > 0) {
             List<Pedido> candidatosPedido = new ArrayList<>();
             Map<Pedido, Integer> cantidadPorCandidato = new HashMap<>();
             for (Pedido p : pedidos) {
                 if (restanteLocal.get(p) <= 0 || visitados.contains(p)) continue;
-                int cantidad = Math.min(restanteLocal.get(p), capacidadRestante);
+                int cantidad = Math.min(Math.min(restanteLocal.get(p), capacidadRestante), stockAlmacenRestante);
+                if (cantidad <= 0) continue;
                 List<Entrega> tentativa = new ArrayList<>(secuencia);
                 tentativa.add(new Entrega(p, cantidad));
                 if (RutaUtil.evaluar(tentativa, apertura.tipo, apertura.almacen.ubicacion, ctx.horaActual, ctx.grafo).factible()) {
@@ -207,6 +217,7 @@ public final class AntColonySystemVRP {
             visitados.add(siguiente);
             restanteLocal.put(siguiente, restanteLocal.get(siguiente) - cantidad);
             capacidadRestante -= cantidad;
+            stockAlmacenRestante -= cantidad;
             nodoActual = nodoSiguiente;
             puntoActual = siguiente.ubicacion;
         }

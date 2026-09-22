@@ -45,6 +45,22 @@ public final class RutaUtil {
         return new Evaluacion(true, distanciaTotal, horaActual);
     }
 
+    /** Hora de llegada (antes del servicio) a cada parada de la secuencia, con las mismas reglas de evaluar(). */
+    public static List<LocalDateTime> horasLlegada(List<Entrega> secuencia, TipoVehiculo tipo, Punto origen,
+                                                    LocalDateTime horaInicio, GrafoVial grafo) {
+        List<LocalDateTime> llegadas = new java.util.ArrayList<>(secuencia.size());
+        Punto actual = origen;
+        LocalDateTime horaActual = horaInicio;
+        for (Entrega e : secuencia) {
+            int distanciaKm = grafo.distanciaKm(actual, e.pedido.ubicacion);
+            horaActual = horaActual.plusSeconds(Math.round(distanciaKm / tipo.velocidadKmH * 3600));
+            llegadas.add(horaActual);
+            horaActual = horaActual.plusMinutes(Math.round(HORAS_SERVICIO_POR_PARADA * 60));
+            actual = e.pedido.ubicacion;
+        }
+        return llegadas;
+    }
+
     public static double distanciaRetornoKm(Punto ultimoPunto, Almacen almacen, GrafoVial grafo) {
         return grafo.distanciaKm(ultimoPunto, almacen.ubicacion);
     }

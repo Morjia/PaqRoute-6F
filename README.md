@@ -37,6 +37,67 @@ costo total, km recorridos, entregas parciales, Ta promedio/máximo del algoritm
 Advertencia de rendimiento: correr los 36 meses completos (2026-2028, ~160,000 pedidos) toma
 del orden de 1 a 1.5 minutos por algoritmo.
 
+## Experimentos del Informe de Diseno de Experimento
+
+`paqroute.Experimentos` ejecuta por lotes los Experimentos 1 (consumo de SLA) y 2 (carga maxima
+sostenible U*): bloques de 1 dia (00:00-24:00), 5 semillas por algoritmo, semilla derivada del
+numero de tick, factor de carga lambda (cantidad x lambda, redondeo hacia arriba), seleccion de
+los 20 dias mas cargados que ambos algoritmos procesan sin colapsar, y busqueda de lambda*
+(duplicacion + biseccion hasta 0.05 + verificacion de monotonia con lambda*+0.1 y +0.2).
+Usa todos los nucleos disponibles.
+
+```bash
+javac -d out src/paqroute/*.java
+java -cp out paqroute.Experimentos
+```
+
+Opciones: `--salida=resultados --bloques=20 --semillas=5 --hilos=N --desde=2026-09-01
+--hasta=2028-12-31 --max-candidatos=N --lambda-max=64 --solo-exp1`. Salidas en `resultados/`:
+`resultados_corridas.csv` (Anexo 1, una fila por corrida), `tabla2_bloques.csv` (Tabla 2),
+`resultados_bloques_exp1.csv` y `resultados_bloques_exp2.csv` (formato largo fecha_bloque/algoritmo/valor,
+listos para el pivot del Anexo 2) y `dias_descartados.csv`. Un lambda "sobrevive" solo si ninguna
+semilla colapsa; al primer colapso se dejan de correr las semillas restantes de ese lambda.
+
+### Afinacion de hiperparametros
+
+`paqroute.Afinacion` barre una grilla chica de hiperparametros de ACS (beta x q0) y GRASP-VNS
+(alfaGRASP x iteraciones) buscando la combinacion que maximiza U* (Experimento 2), sobre un
+conjunto de dias SEPARADO de los 20 bloques de `Experimentos` (por defecto 2026-09-01 a
+2027-04-30, mientras que la corrida final de `Experimentos` cae en 2027-05-01 en adelante) para
+no afinar sobre la misma muestra que despues se usa para comparar.
+
+```bash
+java -cp out paqroute.Afinacion
+```
+
+Opciones: `--salida=afinacion --desde=2026-09-01 --hasta=2027-04-30 --dias=5 --semillas=2
+--hilos=N --lambda-max=64`. Salidas en `afinacion/`: `afinacion_corridas.csv` (una fila por
+dia+combinacion) y `afinacion_resumen.csv` (promedio de U* por combinacion, de mejor a peor).
+
+**Resultado de la grilla (5 dias de afinacion, 2 semillas):**
+
+- **ACS**: ninguna combinacion alcanzo a GRASP-VNS en U* (la mejor de ACS quedo por debajo de la
+  peor de GRASP-VNS) -- la brecha del Experimento 2 es estructural (GRASP-VNS tiene una fase de
+  busqueda local que ACS no tiene), no un efecto de afinacion. `beta=3.0` si mejoraba U* de ACS en
+  ~4-5% *dentro de la muestra de afinacion*.
+- **GRASP-VNS**: `alfaGRASP=0.5, maxIteracionesGRASP=10` (en vez de 0.3 y 5) mejoraba U* en ~5.8%
+  *dentro de la muestra de afinacion*.
+
+**Verificacion de generalizacion** (paso obligatorio antes de adoptar cualquier hallazgo de la
+afinacion: correr los 20 bloques finales de `Experimentos` con el parametro nuevo y comparar contra
+la corrida con los valores originales, sobre la MISMA seleccion de bloques):
+
+| | Muestra de afinacion (5 dias) | 20 bloques finales |
+|---|---|---|
+| ACS `beta=3.0` vs `2.0` | +4-5% en U* | **+0.1%** (no generalizo) |
+| GRASP-VNS `alfa=0.5,iter=10` vs `0.3,5` | +5.8% en U* | **SLA -6.6%, U* +6.1%** (si generalizo, mismos 20 dias aceptados) |
+
+**Conclusion**: `beta=3.0` de ACS se descarto (quedo en 2.0, el valor original del informe, sin
+ajuste). `alfaGRASP=0.5, maxIteracionesGRASP=10` si se adoptaron como nuevo default de GRASP-VNS en
+`Simulador.ParametrosAlgoritmo.DEFAULT` -- son los valores con los que se corrieron los resultados
+finales en `resultados/`. El resto de los parametros de ambos algoritmos (numHormigas,
+numIteracionesAcs, alfaAcs, rho, q0) sigue en sus valores originales del informe, sin ajuste.
+
 ## Estructura
 
 ```

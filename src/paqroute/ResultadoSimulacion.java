@@ -15,6 +15,14 @@ public final class ResultadoSimulacion {
     public double kilometrosRecorridos;
     public int ticksSimulados;
 
+    /** Solo se llena si no hubo colapso: consumo promedio de SLA (%) sobre los pedidos del bloque. */
+    public double consumoSlaPromedioPct = Double.NaN;
+    public int pedidosCompletos;
+
+    public double costoPorPedido() {
+        return pedidosCompletos == 0 ? Double.NaN : costoAcumuladoSoles / pedidosCompletos;
+    }
+
     /** Ta (tiempo de algoritmo): tiempo real medido en cada invocacion del algoritmo, en milisegundos. */
     public int invocacionesAlgoritmo;
     public long tiempoAlgoritmoTotalMs;
