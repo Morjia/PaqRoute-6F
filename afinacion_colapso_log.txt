@@ -1,0 +1,57 @@
+Leyendo datos de data/ventas, data/bloqueos y data/mantenimiento...
+Pedidos: 160010, bloqueos: 21725, mantenimiento: 666
+Escenarios de afinacion (tuning): [2026-09-16, 2027-04-27]
+Escenarios de verificacion: [2027-12-28, 2028-02-02, 2028-03-26, 2028-06-05]
+  ACS beta=1.5000 q0=0.7000 inicio=2026-09-16 -> Tc=199.4 dias
+  ACS beta=1.5000 q0=0.7000 inicio=2027-04-27 -> Tc=5.9 dias
+  ACS beta=1.5000 q0=0.9000 inicio=2026-09-16 -> Tc=173.7 dias
+  ACS beta=1.5000 q0=0.9000 inicio=2027-04-27 -> Tc=6.1 dias
+  ACS beta=2.0000 q0=0.7000 inicio=2026-09-16 -> Tc=199.4 dias
+  ACS beta=2.0000 q0=0.7000 inicio=2027-04-27 -> Tc=6.0 dias
+  ACS beta=2.0000 q0=0.9000 inicio=2026-09-16 -> Tc=201.6 dias
+  ACS beta=2.0000 q0=0.9000 inicio=2027-04-27 -> Tc=4.5 dias
+  ACS beta=3.0000 q0=0.7000 inicio=2026-09-16 -> Tc=199.4 dias
+  ACS beta=3.0000 q0=0.7000 inicio=2027-04-27 -> Tc=6.3 dias
+  ACS beta=3.0000 q0=0.9000 inicio=2026-09-16 -> Tc=201.2 dias
+  ACS beta=3.0000 q0=0.9000 inicio=2027-04-27 -> Tc=6.3 dias
+  GRASP_VNS alfa=0.1500 iter=5 inicio=2026-09-16 -> Tc=118.0 dias
+  GRASP_VNS alfa=0.1500 iter=5 inicio=2027-04-27 -> Tc=6.3 dias
+  GRASP_VNS alfa=0.1500 iter=10 inicio=2026-09-16 -> Tc=119.3 dias
+  GRASP_VNS alfa=0.1500 iter=10 inicio=2027-04-27 -> Tc=6.3 dias
+  GRASP_VNS alfa=0.3000 iter=5 inicio=2026-09-16 -> Tc=125.3 dias
+  GRASP_VNS alfa=0.3000 iter=5 inicio=2027-04-27 -> Tc=6.3 dias
+  GRASP_VNS alfa=0.3000 iter=10 inicio=2026-09-16 -> Tc=145.1 dias
+  GRASP_VNS alfa=0.3000 iter=10 inicio=2027-04-27 -> Tc=6.3 dias
+  GRASP_VNS alfa=0.5000 iter=5 inicio=2026-09-16 -> Tc=146.3 dias
+  GRASP_VNS alfa=0.5000 iter=5 inicio=2027-04-27 -> Tc=6.4 dias
+  GRASP_VNS alfa=0.5000 iter=10 inicio=2026-09-16 -> Tc=146.4 dias
+  GRASP_VNS alfa=0.5000 iter=10 inicio=2027-04-27 -> Tc=6.6 dias
+
+Mejor combinacion ACS (por Tc promedio): beta=3.0000 q0=0.9000
+Mejor combinacion GRASP-VNS (por Tc promedio): alfa=0.5000 iter=10
+  [verif] ACS original(beta=2.0,q0=0.9) inicio=2027-12-28 -> Tc=4.3 dias
+  [verif] ACS original(beta=2.0,q0=0.9) inicio=2028-02-02 -> Tc=0.4 dias
+  [verif] ACS original(beta=2.0,q0=0.9) inicio=2028-03-26 -> Tc=6.3 dias
+  [verif] ACS original(beta=2.0,q0=0.9) inicio=2028-06-05 -> Tc=0.3 dias
+  [verif] ACS original(beta=2.0,q0=0.9) -> Tc promedio = 2.8 dias (4 escenarios)
+
+  [verif] ACS candidato(beta=3.0000,q0=0.9000) inicio=2027-12-28 -> Tc=4.3 dias
+  [verif] ACS candidato(beta=3.0000,q0=0.9000) inicio=2028-02-02 -> Tc=0.6 dias
+  [verif] ACS candidato(beta=3.0000,q0=0.9000) inicio=2028-03-26 -> Tc=6.3 dias
+  [verif] ACS candidato(beta=3.0000,q0=0.9000) inicio=2028-06-05 -> Tc=0.3 dias
+  [verif] ACS candidato(beta=3.0000,q0=0.9000) -> Tc promedio = 2.9 dias (4 escenarios)
+
+  [verif] GRASP_VNS original(alfa=0.5,iter=10) inicio=2027-12-28 -> Tc=5.3 dias
+  [verif] GRASP_VNS original(alfa=0.5,iter=10) inicio=2028-02-02 -> Tc=1.2 dias
+  [verif] GRASP_VNS original(alfa=0.5,iter=10) inicio=2028-03-26 -> Tc=7.0 dias
+  [verif] GRASP_VNS original(alfa=0.5,iter=10) inicio=2028-06-05 -> Tc=0.7 dias
+  [verif] GRASP_VNS original(alfa=0.5,iter=10) -> Tc promedio = 3.6 dias (4 escenarios)
+
+  [verif] GRASP_VNS candidato(alfa=0.5000,iter=10) inicio=2027-12-28 -> Tc=5.3 dias
+  [verif] GRASP_VNS candidato(alfa=0.5000,iter=10) inicio=2028-02-02 -> Tc=1.2 dias
+  [verif] GRASP_VNS candidato(alfa=0.5000,iter=10) inicio=2028-03-26 -> Tc=7.0 dias
+  [verif] GRASP_VNS candidato(alfa=0.5000,iter=10) inicio=2028-06-05 -> Tc=0.7 dias
+  [verif] GRASP_VNS candidato(alfa=0.5000,iter=10) -> Tc promedio = 3.6 dias (4 escenarios)
+
+
+Listo. Salida en: C:\PaqRoute-6F\afinacion_colapso

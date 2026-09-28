@@ -1,0 +1,17 @@
+algoritmo,configuracion,fecha_inicio,tc_dias,censurado
+ACS,original(beta=2.0,q0=0.9),2027-12-28,4.2708,false
+ACS,original(beta=2.0,q0=0.9),2028-02-02,0.3542,false
+ACS,original(beta=2.0,q0=0.9),2028-03-26,6.3125,false
+ACS,original(beta=2.0,q0=0.9),2028-06-05,0.2500,false
+ACS,candidato(beta=3.0000,q0=0.9000),2027-12-28,4.2708,false
+ACS,candidato(beta=3.0000,q0=0.9000),2028-02-02,0.6042,false
+ACS,candidato(beta=3.0000,q0=0.9000),2028-03-26,6.2917,false
+ACS,candidato(beta=3.0000,q0=0.9000),2028-06-05,0.2500,false
+GRASP_VNS,original(alfa=0.5,iter=10),2027-12-28,5.2917,false
+GRASP_VNS,original(alfa=0.5,iter=10),2028-02-02,1.2292,false
+GRASP_VNS,original(alfa=0.5,iter=10),2028-03-26,6.9792,false
+GRASP_VNS,original(alfa=0.5,iter=10),2028-06-05,0.7292,false
+GRASP_VNS,candidato(alfa=0.5000,iter=10),2027-12-28,5.2917,false
+GRASP_VNS,candidato(alfa=0.5000,iter=10),2028-02-02,1.2292,false
+GRASP_VNS,candidato(alfa=0.5000,iter=10),2028-03-26,6.9792,false
+GRASP_VNS,candidato(alfa=0.5000,iter=10),2028-06-05,0.7292,false

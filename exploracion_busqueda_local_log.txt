@@ -1,0 +1,25 @@
+Dia aceptado: 2027-04-08 (381 pedidos)
+Dia aceptado: 2027-04-01 (376 pedidos)
+Dia aceptado: 2027-04-10 (376 pedidos)
+Dia aceptado: 2027-03-07 (370 pedidos)
+Dia aceptado: 2027-03-10 (364 pedidos)
+  ACS          2027-04-08 -> U*=4222.0
+  ACS          2027-04-01 -> U*=3318.2
+  ACS          2027-04-10 -> U*=2889.4
+  ACS          2027-03-07 -> U*=4262.9
+  ACS          2027-03-10 -> U*=4074.0
+  ACS_local    2027-04-08 -> U*=3694.3
+  ACS_local    2027-04-01 -> U*=4164.0
+  ACS_local    2027-04-10 -> U*=2449.7
+  ACS_local    2027-03-07 -> U*=4201.1
+  ACS_local    2027-03-10 -> U*=4074.0
+  GRASP_VNS    2027-04-08 -> U*=5277.5
+  GRASP_VNS    2027-04-01 -> U*=5074.9
+  GRASP_VNS    2027-04-10 -> U*=4585.3
+  GRASP_VNS    2027-03-07 -> U*=5189.6
+  GRASP_VNS    2027-03-10 -> U*=5347.1
+
+Resumen (U* promedio sobre los dias de afinacion):
+  ACS          3753.3
+  ACS_local    3716.6
+  GRASP_VNS    5094.9

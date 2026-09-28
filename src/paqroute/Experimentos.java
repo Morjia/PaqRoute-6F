@@ -36,7 +36,21 @@ public final class Experimentos {
     // sin necesidad de un limite explicito aqui.
 
     private record Opciones(Path salida, int numBloques, int semillas, int hilos, LocalDate desde, LocalDate hasta,
-                             int maxCandidatos, double lambdaMax, boolean soloExp1) {}
+                             int maxCandidatos, double lambdaMax, boolean soloExp1, boolean acsMejorado, Path diasFijos) {}
+
+    /**
+     * ACS "mejorado" (EXPERIMENTAL, opt-in con --acs-mejorado): combina las 3 mejoras exploradas
+     * fuera de la comparacion oficial del informe -- memoria de feromonas (retencion 0.3), busqueda
+     * de vecindad variable (VND) sobre la mejor solucion del tick, y busqueda ampliada de tipo de
+     * vehiculo al abrir una ruta. GRASP-VNS sigue usando sus propios campos del mismo DEFAULT, asi
+     * que esto no lo afecta.
+     */
+    private static final Simulador.ParametrosAlgoritmo PARAMS_ACS_MEJORADO = Simulador.ParametrosAlgoritmo.DEFAULT
+            .conMemoriaAcs(0.3).conBusquedaLocalAcs(true).conTipoVehiculoAmpliadoAcs(true);
+
+    private static Simulador.ParametrosAlgoritmo paramsPara(Simulador.Algoritmo alg, boolean acsMejorado) {
+        return (alg == Simulador.Algoritmo.ACS && acsMejorado) ? PARAMS_ACS_MEJORADO : Simulador.ParametrosAlgoritmo.DEFAULT;
+    }
 
     public static void main(String[] args) throws Exception {
         Locale.setDefault(Locale.US);
@@ -52,12 +66,28 @@ public final class Experimentos {
 
         Map<LocalDate, List<Pedido>> pedidosPorDia = agruparPorDia(todosPedidos, opt.desde(), opt.hasta());
 
-        List<LocalDate> candidatos = new ArrayList<>(pedidosPorDia.keySet());
-        candidatos.sort(Comparator.<LocalDate>comparingInt(d -> pedidosPorDia.get(d).size()).reversed());
-        if (opt.maxCandidatos() > 0 && candidatos.size() > opt.maxCandidatos()) {
-            candidatos = candidatos.subList(0, opt.maxCandidatos());
+        List<LocalDate> candidatos;
+        if (opt.diasFijos() != null) {
+            // Salta la busqueda de candidatos (la parte cara): usa una lista de dias ya validada para
+            // ESTA MISMA pareja de configuraciones (ver README, "--dias-fijos"). Si cambias los
+            // hiperparametros o la variante de algun algoritmo, la lista puede dejar de ser valida --
+            // el chequeo de sobrevivencia de cada dia se sigue haciendo igual, asi que un dia que ya
+            // no sobreviva se descarta y queda registrado en dias_descartados.csv como cualquier otro.
+            candidatos = new ArrayList<>();
+            for (String linea : Files.readAllLines(opt.diasFijos())) {
+                String limpia = linea.trim();
+                if (limpia.isEmpty() || limpia.startsWith("#")) continue;
+                candidatos.add(LocalDate.parse(limpia));
+            }
+            System.out.printf("Dias fijos leidos de %s: %d%n", opt.diasFijos(), candidatos.size());
+        } else {
+            candidatos = new ArrayList<>(pedidosPorDia.keySet());
+            candidatos.sort(Comparator.<LocalDate>comparingInt(d -> pedidosPorDia.get(d).size()).reversed());
+            if (opt.maxCandidatos() > 0 && candidatos.size() > opt.maxCandidatos()) {
+                candidatos = candidatos.subList(0, opt.maxCandidatos());
+            }
+            System.out.printf("Dias candidatos (ordenados por carga, %s a %s): %d%n", opt.desde(), opt.hasta(), candidatos.size());
         }
-        System.out.printf("Dias candidatos (ordenados por carga, %s a %s): %d%n", opt.desde(), opt.hasta(), candidatos.size());
 
         ExecutorService pool = Executors.newFixedThreadPool(opt.hilos());
         List<CorridaCsv> corridas = new ArrayList<>();
@@ -69,6 +99,10 @@ public final class Experimentos {
                 if (bloquesAceptados.size() >= opt.numBloques()) break;
 
                 List<Pedido> pedidosDia = pedidosPorDia.get(dia);
+                if (pedidosDia == null) {
+                    System.out.println("Dia sin pedidos en el rango --desde/--hasta, se omite: " + dia);
+                    continue;
+                }
                 LocalDateTime inicioBloque = dia.atStartOfDay();
                 int unidadesBloque = pedidosDia.stream().mapToInt(p -> p.cantidadTotal).sum();
 
@@ -80,7 +114,8 @@ public final class Experimentos {
                     List<Future<ResultadoCorrida>> futuros = new ArrayList<>();
                     for (int s = 1; s <= opt.semillas(); s++) {
                         long semilla = s;
-                        futuros.add(pool.submit(correr(pedidosDia, bloqueos, mantenimientos, inicioBloque, alg, semilla, 1.0)));
+                        futuros.add(pool.submit(correr(pedidosDia, bloqueos, mantenimientos, inicioBloque, alg, semilla, 1.0,
+                                paramsPara(alg, opt.acsMejorado()))));
                     }
                     List<ResultadoCorrida> resultados = new ArrayList<>();
                     for (Future<ResultadoCorrida> f : futuros) resultados.add(f.get());
@@ -122,7 +157,8 @@ public final class Experimentos {
                 for (Bloque bloque : bloquesAceptados) {
                     for (Simulador.Algoritmo alg : Simulador.Algoritmo.values()) {
                         LambdaEstrella le = buscarLambdaEstrella(pool, pedidosPorDia.get(bloque.dia), bloqueos,
-                                mantenimientos, bloque.inicioBloque, alg, opt.semillas(), opt.lambdaMax(), corridas, bloque.unidades);
+                                mantenimientos, bloque.inicioBloque, alg, opt.semillas(), opt.lambdaMax(), corridas,
+                                bloque.unidades, opt.acsMejorado());
                         bloque.uEstrella.put(alg, le.lambdaEstrella * bloque.unidades);
                         bloque.lambdaEstrella.put(alg, le.lambdaEstrella);
                         System.out.printf("  U* %s %s: lambda*=%.3f -> U*=%.1f (monotonia %s)%n",
@@ -156,12 +192,12 @@ public final class Experimentos {
                                                          List<Bloqueo> bloqueos, List<Mantenimiento> mantenimientos,
                                                          LocalDateTime inicioBloque, Simulador.Algoritmo alg,
                                                          int semillas, double lambdaMax, List<CorridaCsv> corridas,
-                                                         int unidadesBloque) throws Exception {
+                                                         int unidadesBloque, boolean acsMejorado) throws Exception {
         double sobrevive = 1.0; // lambda = 1 ya se sabe que sobrevive (paso el filtro del Experimento 1).
         double colapsaEn = -1.0;
         double lambda = 2.0;
         while (lambda <= lambdaMax) {
-            if (sobreviveLambda(pool, pedidosDia, bloqueos, mantenimientos, inicioBloque, alg, semillas, lambda, corridas, unidadesBloque)) {
+            if (sobreviveLambda(pool, pedidosDia, bloqueos, mantenimientos, inicioBloque, alg, semillas, lambda, corridas, unidadesBloque, acsMejorado)) {
                 sobrevive = lambda;
                 lambda *= 2.0;
             } else {
@@ -177,7 +213,7 @@ public final class Experimentos {
         // Biseccion entre el ultimo valor que sobrevive y el primero que colapsa.
         while (colapsaEn - sobrevive >= 0.05) {
             double medio = (sobrevive + colapsaEn) / 2.0;
-            if (sobreviveLambda(pool, pedidosDia, bloqueos, mantenimientos, inicioBloque, alg, semillas, medio, corridas, unidadesBloque)) {
+            if (sobreviveLambda(pool, pedidosDia, bloqueos, mantenimientos, inicioBloque, alg, semillas, medio, corridas, unidadesBloque, acsMejorado)) {
                 sobrevive = medio;
             } else {
                 colapsaEn = medio;
@@ -186,9 +222,9 @@ public final class Experimentos {
 
         // Verificacion de monotonia: lambda* + 0.1 y lambda* + 0.2 deberian colapsar tambien.
         boolean masPuntoUno = !sobreviveLambda(pool, pedidosDia, bloqueos, mantenimientos, inicioBloque, alg, semillas,
-                sobrevive + 0.1, corridas, unidadesBloque);
+                sobrevive + 0.1, corridas, unidadesBloque, acsMejorado);
         boolean masPuntoDos = !sobreviveLambda(pool, pedidosDia, bloqueos, mantenimientos, inicioBloque, alg, semillas,
-                sobrevive + 0.2, corridas, unidadesBloque);
+                sobrevive + 0.2, corridas, unidadesBloque, acsMejorado);
         return new LambdaEstrella(sobrevive, masPuntoUno && masPuntoDos);
     }
 
@@ -196,11 +232,12 @@ public final class Experimentos {
     private static boolean sobreviveLambda(ExecutorService pool, List<Pedido> pedidosDia, List<Bloqueo> bloqueos,
                                             List<Mantenimiento> mantenimientos, LocalDateTime inicioBloque,
                                             Simulador.Algoritmo alg, int semillas, double lambda,
-                                            List<CorridaCsv> corridas, int unidadesBloque) throws Exception {
+                                            List<CorridaCsv> corridas, int unidadesBloque, boolean acsMejorado) throws Exception {
         List<Future<ResultadoCorrida>> futuros = new ArrayList<>();
         for (int s = 1; s <= semillas; s++) {
             long semilla = s;
-            futuros.add(pool.submit(correr(pedidosDia, bloqueos, mantenimientos, inicioBloque, alg, semilla, lambda)));
+            futuros.add(pool.submit(correr(pedidosDia, bloqueos, mantenimientos, inicioBloque, alg, semilla, lambda,
+                    paramsPara(alg, acsMejorado))));
         }
         boolean sobrevive = true;
         for (Future<ResultadoCorrida> f : futuros) {
@@ -219,11 +256,12 @@ public final class Experimentos {
 
     private static Callable<ResultadoCorrida> correr(List<Pedido> pedidosDia, List<Bloqueo> bloqueos,
                                                        List<Mantenimiento> mantenimientos, LocalDateTime inicioBloque,
-                                                       Simulador.Algoritmo alg, long semilla, double lambda) {
+                                                       Simulador.Algoritmo alg, long semilla, double lambda,
+                                                       Simulador.ParametrosAlgoritmo parametros) {
         return () -> {
             List<Pedido> pedidosCorrida = new ArrayList<>(pedidosDia.size());
             for (Pedido p : pedidosDia) pedidosCorrida.add(p.copiaEscalada(lambda));
-            Simulador sim = new Simulador(pedidosCorrida, bloqueos, mantenimientos, TICK, alg, semilla, inicioBloque);
+            Simulador sim = new Simulador(pedidosCorrida, bloqueos, mantenimientos, TICK, alg, semilla, inicioBloque, parametros);
             return new ResultadoCorrida(semilla, sim.ejecutar());
         };
     }
@@ -346,6 +384,8 @@ public final class Experimentos {
         int maxCandidatos = -1;
         double lambdaMax = 64.0;
         boolean soloExp1 = false;
+        boolean acsMejorado = false;
+        Path diasFijos = null;
 
         for (String arg : args) {
             if (!arg.startsWith("--")) continue;
@@ -362,9 +402,12 @@ public final class Experimentos {
                 case "max-candidatos" -> maxCandidatos = Integer.parseInt(valor);
                 case "lambda-max" -> lambdaMax = Double.parseDouble(valor);
                 case "solo-exp1" -> soloExp1 = true;
+                case "acs-mejorado" -> acsMejorado = true;
+                case "dias-fijos" -> diasFijos = Path.of(valor);
                 default -> System.out.println("Opcion desconocida ignorada: --" + clave);
             }
         }
-        return new Opciones(salida, numBloques, semillas, Math.max(1, hilos), desde, hasta, maxCandidatos, lambdaMax, soloExp1);
+        return new Opciones(salida, numBloques, semillas, Math.max(1, hilos), desde, hasta, maxCandidatos, lambdaMax,
+                soloExp1, acsMejorado, diasFijos);
     }
 }

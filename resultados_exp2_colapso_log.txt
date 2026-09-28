@@ -1,0 +1,65 @@
+Leyendo datos de data/ventas, data/bloqueos y data/mantenimiento...
+Pedidos: 160010, bloqueos: 21725, mantenimiento: 666
+Escenarios (30): [2026-01-19, 2026-04-21, 2026-05-14, 2026-09-02, 2026-09-06, 2026-10-12, 2026-11-11, 2026-12-21, 2027-02-10, 2027-03-26, 2027-04-05, 2027-05-09, 2027-05-17, 2027-05-21, 2027-05-22, 2027-08-05, 2027-08-08, 2027-08-26, 2027-09-17, 2027-09-21, 2027-10-17, 2027-10-23, 2027-10-24, 2027-12-14, 2028-01-04, 2028-01-20, 2028-02-07, 2028-04-01, 2028-05-07, 2028-05-31]
+  escenario  1 (2026-01-19) ACS       -> Tc=441.63 dias | pedidos=56279 completados=56125 costo=S/ 12086132 km=2334174
+  escenario  1 (2026-01-19) GRASP_VNS -> Tc=386.31 dias | pedidos=47020 completados=46814 costo=S/ 9541962 km=1867275
+  escenario  2 (2026-04-21) ACS       -> Tc=349.90 dias | pedidos=52252 completados=52119 costo=S/ 11228000 km=2100504
+  escenario  2 (2026-04-21) GRASP_VNS -> Tc=294.15 dias | pedidos=42863 completados=42662 costo=S/ 8728844 km=1666953
+  escenario  3 (2026-05-14) ACS       -> Tc=327.75 dias | pedidos=50721 completados=50586 costo=S/ 10866519 km=2014219
+  escenario  3 (2026-05-14) GRASP_VNS -> Tc=271.35 dias | pedidos=41136 completados=40922 costo=S/ 8337607 km=1580038
+  escenario  4 (2026-09-02) ACS       -> Tc=215.69 dias | pedidos=36429 completados=36270 costo=S/ 7538615 km=1338914
+  escenario  4 (2026-09-02) GRASP_VNS -> Tc=160.42 dias | pedidos=27186 completados=26994 costo=S/ 5591597 km=1010344
+  escenario  5 (2026-09-06) ACS       -> Tc=215.56 dias | pedidos=37157 completados=36946 costo=S/ 7572087 km=1342424
+  escenario  5 (2026-09-06) GRASP_VNS -> Tc=156.35 dias | pedidos=26560 completados=26350 costo=S/ 5496839 km=990922
+  escenario  6 (2026-10-12) ACS       -> Tc=175.63 dias | pedidos=29473 completados=29316 costo=S/ 5951890 km=1042793
+  escenario  6 (2026-10-12) GRASP_VNS -> Tc=120.48 dias | pedidos=20268 completados=20074 costo=S/ 4257037 km=754050
+  escenario  7 (2026-11-11) ACS       -> Tc=143.44 dias | pedidos=23708 completados=23617 costo=S/ 4682876 km=815099
+  escenario  7 (2026-11-11) GRASP_VNS -> Tc=90.33 dias | pedidos=15204 completados=14995 costo=S/ 3261627 km=569203
+  escenario  8 (2026-12-21) ACS       -> Tc=108.69 dias | pedidos=17856 completados=17676 costo=S/ 3213241 km=558317
+  escenario  8 (2026-12-21) GRASP_VNS -> Tc=50.73 dias | pedidos=7714 completados=7519 costo=S/ 1731907 km=295682
+  escenario  9 (2027-02-10) ACS       -> Tc=53.98 dias | pedidos=8859 completados=8712 costo=S/ 1462898 km=254944
+  escenario  9 (2027-02-10) GRASP_VNS -> Tc=8.15 dias | pedidos=2267 completados=2055 costo=S/ 486066 km=82529
+  escenario 10 (2027-03-26) ACS       -> Tc=10.63 dias | pedidos=1594 completados=1447 costo=S/ 215477 km=37784
+  escenario 10 (2027-03-26) GRASP_VNS -> Tc=8.88 dias | pedidos=994 completados=765 costo=S/ 184105 km=30890
+  escenario 11 (2027-04-05) ACS       -> Tc=5.21 dias | pedidos=1771 completados=1608 costo=S/ 247087 km=43235
+  escenario 11 (2027-04-05) GRASP_VNS -> Tc=4.04 dias | pedidos=1353 completados=1083 costo=S/ 251414 km=42313
+  escenario 12 (2027-05-09) ACS       -> Tc=4.67 dias | pedidos=1644 completados=1468 costo=S/ 213694 km=37602
+  escenario 12 (2027-05-09) GRASP_VNS -> Tc=3.10 dias | pedidos=1099 completados=844 costo=S/ 196890 km=33122
+  escenario 13 (2027-05-17) ACS       -> Tc=17.06 dias | pedidos=831 completados=631 costo=S/ 101992 km=17872
+  escenario 13 (2027-05-17) GRASP_VNS -> Tc=17.52 dias | pedidos=1017 completados=678 costo=S/ 160984 km=26984
+  escenario 14 (2027-05-21) ACS       -> Tc=13.23 dias | pedidos=908 completados=706 costo=S/ 107255 km=18711
+  escenario 14 (2027-05-21) GRASP_VNS -> Tc=13.65 dias | pedidos=1066 completados=721 costo=S/ 163752 km=27603
+  escenario 15 (2027-05-22) ACS       -> Tc=12.10 dias | pedidos=851 completados=663 costo=S/ 102683 km=17928
+  escenario 15 (2027-05-22) GRASP_VNS -> Tc=12.56 dias | pedidos=1032 completados=694 costo=S/ 160154 km=26942
+  escenario 16 (2027-08-05) ACS       -> Tc=1.17 dias | pedidos=588 completados=358 costo=S/ 56106 km=9862
+  escenario 16 (2027-08-05) GRASP_VNS -> Tc=1.75 dias | pedidos=851 completados=471 costo=S/ 105968 km=17821
+  escenario 17 (2027-08-08) ACS       -> Tc=2.40 dias | pedidos=940 completados=744 costo=S/ 117811 km=20588
+  escenario 17 (2027-08-08) GRASP_VNS -> Tc=2.54 dias | pedidos=1007 completados=689 costo=S/ 160922 km=27080
+  escenario 18 (2027-08-26) ACS       -> Tc=7.98 dias | pedidos=809 completados=601 costo=S/ 93182 km=16333
+  escenario 18 (2027-08-26) GRASP_VNS -> Tc=8.23 dias | pedidos=949 completados=600 costo=S/ 135909 km=22960
+  escenario 19 (2027-09-17) ACS       -> Tc=16.06 dias | pedidos=884 completados=671 costo=S/ 96470 km=16914
+  escenario 19 (2027-09-17) GRASP_VNS -> Tc=16.17 dias | pedidos=936 completados=603 costo=S/ 137363 km=23064
+  escenario 20 (2027-09-21) ACS       -> Tc=11.85 dias | pedidos=783 completados=613 costo=S/ 87537 km=15297
+  escenario 20 (2027-09-21) GRASP_VNS -> Tc=12.21 dias | pedidos=956 completados=617 costo=S/ 136478 km=22944
+  escenario 21 (2027-10-17) ACS       -> Tc=16.58 dias | pedidos=734 completados=486 costo=S/ 73284 km=12926
+  escenario 21 (2027-10-17) GRASP_VNS -> Tc=16.96 dias | pedidos=917 completados=509 costo=S/ 116641 km=19829
+  escenario 22 (2027-10-23) ACS       -> Tc=10.52 dias | pedidos=712 completados=472 costo=S/ 72124 km=12646
+  escenario 22 (2027-10-23) GRASP_VNS -> Tc=10.90 dias | pedidos=879 completados=503 costo=S/ 116352 km=19898
+  escenario 23 (2027-10-24) ACS       -> Tc=9.54 dias | pedidos=718 completados=463 costo=S/ 72130 km=12724
+  escenario 23 (2027-10-24) GRASP_VNS -> Tc=9.96 dias | pedidos=917 completados=524 costo=S/ 118132 km=19992
+  escenario 24 (2027-12-14) ACS       -> Tc=18.88 dias | pedidos=548 completados=283 costo=S/ 41814 km=7384
+  escenario 24 (2027-12-14) GRASP_VNS -> Tc=19.31 dias | pedidos=803 completados=379 costo=S/ 81125 km=13610
+  escenario 25 (2028-01-04) ACS       -> Tc=0.92 dias | pedidos=526 completados=314 costo=S/ 44519 km=7820
+  escenario 25 (2028-01-04) GRASP_VNS -> Tc=1.65 dias | pedidos=942 completados=469 costo=S/ 104627 km=17521
+  escenario 26 (2028-01-20) ACS       -> Tc=12.44 dias | pedidos=238 completados=147 costo=S/ 26094 km=4585
+  escenario 26 (2028-01-20) GRASP_VNS -> Tc=13.58 dias | pedidos=898 completados=446 costo=S/ 103136 km=17276
+  escenario 27 (2028-02-07) ACS       -> Tc=0.67 dias | pedidos=492 completados=234 costo=S/ 36369 km=6272
+  escenario 27 (2028-02-07) GRASP_VNS -> Tc=0.96 dias | pedidos=712 completados=307 costo=S/ 64988 km=10832
+  escenario 28 (2028-04-01) ACS       -> Tc=0.35 dias | pedidos=276 completados=124 costo=S/ 22303 km=3832
+  escenario 28 (2028-04-01) GRASP_VNS -> Tc=0.98 dias | pedidos=770 completados=295 costo=S/ 63446 km=10714
+  escenario 29 (2028-05-07) ACS       -> Tc=0.29 dias | pedidos=200 completados=94 costo=S/ 18666 km=3296
+  escenario 29 (2028-05-07) GRASP_VNS -> Tc=0.88 dias | pedidos=617 completados=258 costo=S/ 56746 km=9473
+  escenario 30 (2028-05-31) ACS       -> Tc=1.33 dias | pedidos=213 completados=112 costo=S/ 21335 km=3745
+  escenario 30 (2028-05-31) GRASP_VNS -> Tc=2.10 dias | pedidos=745 completados=333 costo=S/ 74420 km=12544
+
+Listo. Salida en: C:\PaqRoute-6F\resultados_exp2_colapso

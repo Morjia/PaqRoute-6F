@@ -132,7 +132,7 @@ public final class Afinacion {
     // ------------------------------------------------------------- Evaluacion de un dia+combo
 
     /** true si el bloque sobrevive con lambda dado (ninguna de las semillas colapsa). */
-    private static boolean sobrevive(ExecutorService pool, List<Pedido> pedidosDia, List<Bloqueo> bloqueos,
+    static boolean sobrevive(ExecutorService pool, List<Pedido> pedidosDia, List<Bloqueo> bloqueos,
                                       List<Mantenimiento> mantenimientos, LocalDateTime inicioBloque,
                                       Simulador.Algoritmo alg, Simulador.ParametrosAlgoritmo params,
                                       int semillas, double lambda) throws Exception {
@@ -152,7 +152,7 @@ public final class Afinacion {
     }
 
     /** Duplicacion + biseccion (igual criterio que Experimentos), con los parametros del combo evaluado. */
-    private static double buscarUEstrella(ExecutorService pool, List<Pedido> pedidosDia, List<Bloqueo> bloqueos,
+    static double buscarUEstrella(ExecutorService pool, List<Pedido> pedidosDia, List<Bloqueo> bloqueos,
                                            List<Mantenimiento> mantenimientos, LocalDateTime inicioBloque,
                                            Simulador.Algoritmo alg, Simulador.ParametrosAlgoritmo params,
                                            int semillas, double lambdaMax) throws Exception {

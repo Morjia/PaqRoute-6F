@@ -47,11 +47,45 @@ public final class Simulador {
      *       a los 20 bloques finales (mismos 20 dias aceptados, mejora consistente en ambos
      *       experimentos: SLA -6.6%, U* +6.1%) -- se adoptaron como {@link #DEFAULT}.</li>
      * </ul>
+     * {@code retencionMemoriaAcs} activa la variante EXPERIMENTAL de ACS con memoria de feromonas entre
+     * ticks (ver {@link MemoriaFeromonas}); 0.0 (valor por defecto) = ACS original, sin memoria.
+     * {@code busquedaLocalAcs} activa la variante EXPERIMENTAL de ACS con busqueda de vecindad variable
+     * (VND) sobre la mejor solucion del tick (ver {@link MejoraLocalAcs}), con las mismas 4 vecindades
+     * que usa GraspVnsVRP; false (valor por defecto) = ACS original, sin busqueda local.
+     * {@code tipoVehiculoAmpliadoAcs} activa la variante EXPERIMENTAL de ACS que al abrir una ruta
+     * prueba TODOS los tipos de vehiculo libres (bici/moto/auto), no solo el recomendado por
+     * AsignadorFlota o uno mas caro que el; false (valor por defecto) = ACS original.
      */
     public record ParametrosAlgoritmo(int numHormigas, int numIteracionesAcs, double alfaAcs, double betaAcs,
-                                       double rho, double q0, double alfaGrasp, int maxIteracionesGrasp) {
+                                       double rho, double q0, double alfaGrasp, int maxIteracionesGrasp,
+                                       double retencionMemoriaAcs, boolean busquedaLocalAcs,
+                                       boolean tipoVehiculoAmpliadoAcs) {
         public static final ParametrosAlgoritmo DEFAULT =
                 new ParametrosAlgoritmo(5, 5, 1.0, 2.0, 0.1, 0.9, 0.5, 10);
+
+        public ParametrosAlgoritmo(int numHormigas, int numIteracionesAcs, double alfaAcs, double betaAcs,
+                                    double rho, double q0, double alfaGrasp, int maxIteracionesGrasp) {
+            this(numHormigas, numIteracionesAcs, alfaAcs, betaAcs, rho, q0, alfaGrasp, maxIteracionesGrasp,
+                    0.0, false, false);
+        }
+
+        /** Copia de estos parametros con memoria de feromonas de ACS activada con la retencion dada. */
+        public ParametrosAlgoritmo conMemoriaAcs(double retencion) {
+            return new ParametrosAlgoritmo(numHormigas, numIteracionesAcs, alfaAcs, betaAcs, rho, q0,
+                    alfaGrasp, maxIteracionesGrasp, retencion, busquedaLocalAcs, tipoVehiculoAmpliadoAcs);
+        }
+
+        /** Copia de estos parametros con busqueda local de ACS activada o desactivada. */
+        public ParametrosAlgoritmo conBusquedaLocalAcs(boolean activa) {
+            return new ParametrosAlgoritmo(numHormigas, numIteracionesAcs, alfaAcs, betaAcs, rho, q0,
+                    alfaGrasp, maxIteracionesGrasp, retencionMemoriaAcs, activa, tipoVehiculoAmpliadoAcs);
+        }
+
+        /** Copia de estos parametros con la busqueda ampliada de tipo de vehiculo de ACS activada o desactivada. */
+        public ParametrosAlgoritmo conTipoVehiculoAmpliadoAcs(boolean activa) {
+            return new ParametrosAlgoritmo(numHormigas, numIteracionesAcs, alfaAcs, betaAcs, rho, q0,
+                    alfaGrasp, maxIteracionesGrasp, retencionMemoriaAcs, busquedaLocalAcs, activa);
+        }
     }
 
     private static final int NUM_AUTOS = 10;
@@ -69,6 +103,8 @@ public final class Simulador {
     private final long semilla;
     private final LocalDateTime inicio;
     private final ParametrosAlgoritmo parametros;
+    /** Solo no-null en la variante experimental ACS con memoria (retencionMemoriaAcs > 0). */
+    private final MemoriaFeromonas memoriaAcs;
 
     public Simulador(List<Pedido> pedidos, List<Bloqueo> bloqueos, List<Mantenimiento> mantenimientos,
                       Duration duracionTick, Algoritmo algoritmo, long semilla) {
@@ -93,6 +129,8 @@ public final class Simulador {
         this.algoritmo = algoritmo;
         this.semilla = semilla;
         this.parametros = parametros;
+        this.memoriaAcs = (algoritmo == Algoritmo.ACS && parametros.retencionMemoriaAcs() > 0.0)
+                ? new MemoriaFeromonas() : null;
 
         this.almacenes = List.of(
                 new Almacen(Almacen.Id.CENTRAL, new Punto(27, 14), Integer.MAX_VALUE),
@@ -205,7 +243,9 @@ public final class Simulador {
         return switch (algoritmo) {
             case ACS -> new AntColonySystemVRP(pendientes, vehiculosLibres, ctx, semilla,
                     parametros.numHormigas(), parametros.numIteracionesAcs(), parametros.alfaAcs(),
-                    parametros.betaAcs(), parametros.rho(), parametros.q0())
+                    parametros.betaAcs(), parametros.rho(), parametros.q0(),
+                    memoriaAcs, parametros.retencionMemoriaAcs(), parametros.busquedaLocalAcs(),
+                    parametros.tipoVehiculoAmpliadoAcs())
                     .resolverTick();
             case GRASP_VNS -> new GraspVnsVRP(pendientes, vehiculosLibres, ctx, semilla,
                     parametros.alfaGrasp(), parametros.maxIteracionesGrasp())

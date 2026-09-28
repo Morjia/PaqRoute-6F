@@ -39,10 +39,30 @@ public final class AntColonySystemVRP {
     private final double[][] feromona;
     private final double feromonaInicial;
 
+    /** Variante con memoria entre ticks (null = sin memoria, comportamiento original). */
+    private final MemoriaFeromonas memoria;
+    /** Variante con busqueda de vecindad variable sobre la mejor solucion del tick (ver MejoraLocalAcs). */
+    private final boolean busquedaLocal;
+    /** Variante experimental: prueba TODOS los tipos de vehiculo libres, no solo desde el recomendado hacia arriba. */
+    private final boolean tipoVehiculoAmpliado;
+
     public AntColonySystemVRP(List<Pedido> pedidosPendientes, List<Vehiculo> vehiculosLibres,
                                ContextoPlanificacion ctx, long semilla,
                                int numHormigas, int numIteraciones,
                                double alfa, double beta, double rho, double q0) {
+        this(pedidosPendientes, vehiculosLibres, ctx, semilla, numHormigas, numIteraciones,
+                alfa, beta, rho, q0, null, 0.0, false, false);
+    }
+
+    public AntColonySystemVRP(List<Pedido> pedidosPendientes, List<Vehiculo> vehiculosLibres,
+                               ContextoPlanificacion ctx, long semilla,
+                               int numHormigas, int numIteraciones,
+                               double alfa, double beta, double rho, double q0,
+                               MemoriaFeromonas memoria, double retencionMemoria, boolean busquedaLocal,
+                               boolean tipoVehiculoAmpliado) {
+        this.memoria = memoria;
+        this.busquedaLocal = busquedaLocal;
+        this.tipoVehiculoAmpliado = tipoVehiculoAmpliado;
         this.pedidos = pedidosPendientes;
         this.vehiculosLibres = vehiculosLibres;
         this.ctx = ctx;
@@ -61,6 +81,7 @@ public final class AntColonySystemVRP {
         this.feromonaInicial = 1.0 / (Math.max(n, 1) * costoReferencia);
         this.feromona = new double[n + 1][n + 1];
         for (double[] fila : feromona) java.util.Arrays.fill(fila, feromonaInicial);
+        if (memoria != null) memoria.cargarEn(feromona, indice, feromonaInicial, retencionMemoria);
     }
 
     private double costoHeuristicaVecinoCercano() {
@@ -103,6 +124,13 @@ public final class AntColonySystemVRP {
                 mejorGlobal = mejorIteracion;
             }
             actualizarFeromonaGlobal(mejorGlobal, costoMejorGlobal);
+        }
+        if (memoria != null) {
+            // Nivel al que la evaporacion global deja las aristas no reforzadas tras numIteraciones.
+            memoria.guardarDesde(feromona, pedidos, feromonaInicial, Math.pow(1 - rho, numIteraciones));
+        }
+        if (busquedaLocal && mejorGlobal != null) {
+            MejoraLocalAcs.mejorar(mejorGlobal, vehiculosLibres, ctx);
         }
         return mejorGlobal != null ? mejorGlobal : new Solucion();
     }
@@ -147,7 +175,8 @@ public final class AntColonySystemVRP {
             if (almacenAprox == null) continue;
 
             TipoVehiculo recomendado = AsignadorFlota.tipoRecomendado(semilla, almacenAprox.ubicacion, ctx);
-            for (TipoVehiculo tipo : ordenPorCostoDesde(recomendado)) {
+            TipoVehiculo[] tipos = tipoVehiculoAmpliado ? ORDEN_COMPLETO_POR_COSTO : ordenPorCostoDesde(recomendado);
+            for (TipoVehiculo tipo : tipos) {
                 Vehiculo libre = vehiculosLocal.stream().filter(v -> v.tipo == tipo).findFirst().orElse(null);
                 if (libre == null) continue;
                 int cantidad = Math.min(restanteLocal.get(semilla), tipo.capacidad);
@@ -163,12 +192,14 @@ public final class AntColonySystemVRP {
         return null;
     }
 
+    private static final TipoVehiculo[] ORDEN_COMPLETO_POR_COSTO =
+            {TipoVehiculo.BICICLETA, TipoVehiculo.MOTO, TipoVehiculo.AUTO};
+
     private static TipoVehiculo[] ordenPorCostoDesde(TipoVehiculo recomendado) {
-        TipoVehiculo[] orden = {TipoVehiculo.BICICLETA, TipoVehiculo.MOTO, TipoVehiculo.AUTO};
         int inicio = 0;
-        for (int i = 0; i < orden.length; i++) if (orden[i] == recomendado) inicio = i;
+        for (int i = 0; i < ORDEN_COMPLETO_POR_COSTO.length; i++) if (ORDEN_COMPLETO_POR_COSTO[i] == recomendado) inicio = i;
         List<TipoVehiculo> resultado = new ArrayList<>();
-        for (int i = inicio; i < orden.length; i++) resultado.add(orden[i]);
+        for (int i = inicio; i < ORDEN_COMPLETO_POR_COSTO.length; i++) resultado.add(ORDEN_COMPLETO_POR_COSTO[i]);
         return resultado.toArray(new TipoVehiculo[0]);
     }
 

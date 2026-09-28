@@ -1,0 +1,25 @@
+Pedidos: 160010 | semillas: 5 | hilos: 8
+
+== ACS ==
+  semilla 1 -> 2027-03-13T02:00 (pedidos ingresados: 53697)
+  semilla 2 -> 2027-04-03T11:30 (pedidos ingresados: 55873)
+  semilla 3 -> 2027-04-05T06:00 (pedidos ingresados: 56481)
+  semilla 4 -> 2027-04-03T03:30 (pedidos ingresados: 55781)
+  semilla 5 -> 2027-02-06T07:00 (pedidos ingresados: 46443)
+  mediana del momento de colapso: 2027-04-03T03:30
+
+== ACS_mejorado ==
+  semilla 1 -> 2027-04-08T20:30 (pedidos ingresados: 57670)
+  semilla 2 -> 2027-04-05T15:00 (pedidos ingresados: 56604)
+  semilla 3 -> 2027-04-06T20:30 (pedidos ingresados: 56985)
+  semilla 4 -> 2027-04-08T16:30 (pedidos ingresados: 57608)
+  semilla 5 -> 2027-04-05T05:30 (pedidos ingresados: 56477)
+  mediana del momento de colapso: 2027-04-06T20:30
+
+== GRASP_VNS ==
+  semilla 1 -> 2027-02-09T07:30 (pedidos ingresados: 47345)
+  semilla 2 -> 2027-02-09T09:30 (pedidos ingresados: 47378)
+  semilla 3 -> 2027-02-09T17:30 (pedidos ingresados: 47466)
+  semilla 4 -> 2027-02-09T08:30 (pedidos ingresados: 47365)
+  semilla 5 -> 2027-02-09T08:30 (pedidos ingresados: 47365)
+  mediana del momento de colapso: 2027-02-09T08:30
