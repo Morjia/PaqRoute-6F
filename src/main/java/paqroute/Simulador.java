@@ -106,6 +106,18 @@ public final class Simulador {
     /** Solo no-null en la variante experimental ACS con memoria (retencionMemoriaAcs > 0). */
     private final MemoriaFeromonas memoriaAcs;
 
+    // Estado para ejecucion paso a paso (tick a tick)
+    private LocalDateTime horaActual;
+    private LocalDateTime horaAnterior;
+    private int indiceSiguientePedido;
+    private List<Pedido> pendientes;
+    private ResultadoSimulacion resultado;
+    private boolean colapsado = false;
+    private boolean completado = false;
+    
+    public Solucion ultimaSolucion;
+    public ContextoPlanificacion ultimoContexto;
+
     public Simulador(List<Pedido> pedidos, List<Bloqueo> bloqueos, List<Mantenimiento> mantenimientos,
                       Duration duracionTick, Algoritmo algoritmo, long semilla) {
         this(pedidos, bloqueos, mantenimientos, duracionTick, algoritmo, semilla,
@@ -149,74 +161,106 @@ public final class Simulador {
         return lista;
     }
 
-    public ResultadoSimulacion ejecutar() {
-        ResultadoSimulacion resultado = new ResultadoSimulacion();
-        if (pedidosOrdenados.isEmpty()) return resultado;
+    public void inicializar() {
+        resultado = new ResultadoSimulacion();
+        horaActual = inicio;
+        horaAnterior = horaActual.minusDays(1);
+        indiceSiguientePedido = 0;
+        pendientes = new ArrayList<>();
+        colapsado = false;
+        completado = false;
+        ultimaSolucion = null;
+        ultimoContexto = null;
+    }
 
-        LocalDateTime horaActual = inicio;
-        LocalDateTime horaAnterior = horaActual.minusDays(1);
-        int indiceSiguientePedido = 0;
-        List<Pedido> pendientes = new ArrayList<>();
+    public boolean ejecutarUnTick() {
+        if (colapsado || completado || pedidosOrdenados.isEmpty()) return false;
 
-        while (true) {
-            // Recarga instantanea diaria de los almacenes intermedios al cruzar la medianoche.
-            if (!horaActual.toLocalDate().equals(horaAnterior.toLocalDate())) {
-                for (Almacen a : almacenes) if (a.id != Almacen.Id.CENTRAL) a.recargar();
-            }
+        // Recarga instantanea diaria de los almacenes intermedios al cruzar la medianoche.
+        if (!horaActual.toLocalDate().equals(horaAnterior.toLocalDate())) {
+            for (Almacen a : almacenes) if (a.id != Almacen.Id.CENTRAL) a.recargar();
+        }
 
-            // Ingreso de pedidos cuyo momento de llegada ya se cumplio.
-            while (indiceSiguientePedido < pedidosOrdenados.size()
-                    && !pedidosOrdenados.get(indiceSiguientePedido).momentoLlegada.isAfter(horaActual)) {
-                pendientes.add(pedidosOrdenados.get(indiceSiguientePedido));
-                indiceSiguientePedido++;
-                resultado.pedidosIngresados++;
-            }
-            pendientes.removeIf(Pedido::completo);
+        // Ingreso de pedidos cuyo momento de llegada ya se cumplio.
+        while (indiceSiguientePedido < pedidosOrdenados.size()
+                && !pedidosOrdenados.get(indiceSiguientePedido).momentoLlegada.isAfter(horaActual)) {
+            pendientes.add(pedidosOrdenados.get(indiceSiguientePedido));
+            indiceSiguientePedido++;
+            resultado.pedidosIngresados++;
+        }
+        pendientes.removeIf(Pedido::completo);
 
-            // Vehiculos libres: no en mantenimiento y ya disponibles.
-            List<Vehiculo> vehiculosLibres = new ArrayList<>();
-            for (Vehiculo v : flota) {
-                if (enMantenimiento(v, horaActual)) continue;
-                if (v.estado == Vehiculo.Estado.EN_RUTA && !horaActual.isBefore(v.disponibleDesde)) v.estado = Vehiculo.Estado.LIBRE;
-                if (v.estado == Vehiculo.Estado.LIBRE) vehiculosLibres.add(v);
-            }
+        // Vehiculos libres: no en mantenimiento y ya disponibles.
+        List<Vehiculo> vehiculosLibres = new ArrayList<>();
+        for (Vehiculo v : flota) {
+            if (enMantenimiento(v, horaActual)) continue;
+            if (v.estado == Vehiculo.Estado.EN_RUTA && !horaActual.isBefore(v.disponibleDesde)) v.estado = Vehiculo.Estado.LIBRE;
+            if (v.estado == Vehiculo.Estado.LIBRE) vehiculosLibres.add(v);
+        }
 
-            if (!pendientes.isEmpty() && !vehiculosLibres.isEmpty()) {
-                var bloqueosVigentes = Bloqueo.aristasVigentesEn(bloqueos, horaActual);
-                grafo.actualizarBloqueosVigentes(bloqueosVigentes);
-                ContextoPlanificacion ctx = new ContextoPlanificacion(almacenes, grafo, horaActual);
+        ultimaSolucion = null;
+        ultimoContexto = null;
 
-                long inicioTa = System.nanoTime();
-                Solucion solucion = planificarTick(pendientes, vehiculosLibres, ctx, resultado.ticksSimulados);
-                long ta = (System.nanoTime() - inicioTa) / 1_000_000; // Ta de esta invocacion, en ms
-                resultado.invocacionesAlgoritmo++;
-                resultado.tiempoAlgoritmoTotalMs += ta;
-                resultado.tiempoAlgoritmoMaximoMs = Math.max(resultado.tiempoAlgoritmoMaximoMs, ta);
+        if (!pendientes.isEmpty() && !vehiculosLibres.isEmpty()) {
+            var bloqueosVigentes = Bloqueo.aristasVigentesEn(bloqueos, horaActual);
+            grafo.actualizarBloqueosVigentes(bloqueosVigentes);
+            ContextoPlanificacion ctx = new ContextoPlanificacion(almacenes, grafo, horaActual);
+            ultimoContexto = ctx;
 
-                aplicarSolucion(solucion, resultado, grafo, horaActual);
-            }
+            long inicioTa = System.nanoTime();
+            Solucion solucion = planificarTick(pendientes, vehiculosLibres, ctx, resultado.ticksSimulados);
+            ultimaSolucion = solucion;
+            
+            long ta = (System.nanoTime() - inicioTa) / 1_000_000; // Ta de esta invocacion, en ms
+            resultado.invocacionesAlgoritmo++;
+            resultado.tiempoAlgoritmoTotalMs += ta;
+            resultado.tiempoAlgoritmoMaximoMs = Math.max(resultado.tiempoAlgoritmoMaximoMs, ta);
 
-            // Criterio de colapso: algun pedido pendiente ya supero su plazo.
-            for (Pedido p : pendientes) {
-                if (p.incumplido(horaActual)) {
-                    resultado.colapso = true;
-                    resultado.momentoColapso = horaActual;
-                    resultado.clientePedidoColapsado = p.idCliente + " " + p.ubicacion
-                            + " (pendiente " + p.cantidadPendiente + "/" + p.cantidadTotal + ", limite " + p.fechaLimite + ")";
-                    return resultado;
-                }
-            }
+            aplicarSolucion(solucion, resultado, grafo, horaActual);
+        }
 
-            resultado.ticksSimulados++;
-            horaAnterior = horaActual;
-            horaActual = horaActual.plus(duracionTick);
-
-            if (indiceSiguientePedido >= pedidosOrdenados.size() && pendientes.stream().allMatch(Pedido::completo)) {
-                calcularMetricasSla(resultado);
-                return resultado; // se agoto el historico disponible sin llegar al colapso
+        // Criterio de colapso: algun pedido pendiente ya supero su plazo.
+        for (Pedido p : pendientes) {
+            if (p.incumplido(horaActual)) {
+                resultado.colapso = true;
+                resultado.momentoColapso = horaActual;
+                resultado.clientePedidoColapsado = p.idCliente + " " + p.ubicacion
+                        + " (pendiente " + p.cantidadPendiente + "/" + p.cantidadTotal + ", limite " + p.fechaLimite + ")";
+                colapsado = true;
+                return false; // se detiene
             }
         }
+
+        resultado.ticksSimulados++;
+        horaAnterior = horaActual;
+        horaActual = horaActual.plus(duracionTick);
+
+        if (indiceSiguientePedido >= pedidosOrdenados.size() && pendientes.stream().allMatch(Pedido::completo)) {
+            calcularMetricasSla(resultado);
+            completado = true;
+            return false; // se agoto el historico disponible sin llegar al colapso
+        }
+
+        return true; // sigue corriendo
     }
+
+    public ResultadoSimulacion ejecutar() {
+        inicializar();
+        if (pedidosOrdenados.isEmpty()) return resultado;
+        
+        while (ejecutarUnTick()) {
+            // sigue corriendo
+        }
+        return resultado;
+    }
+    
+    public LocalDateTime getHoraActual() { return horaActual; }
+    public LocalDateTime getHoraSiguiente() { return horaActual.plus(duracionTick); }
+    public ResultadoSimulacion getResultado() { return resultado; }
+    public boolean isColapsado() { return colapsado; }
+    public boolean isCompletado() { return completado; }
+    public List<Vehiculo> getFlota() { return flota; }
+
 
     private boolean enMantenimiento(Vehiculo v, LocalDateTime momento) {
         for (Mantenimiento m : mantenimientos) {
