@@ -1,0 +1,22 @@
+services:
+  paqroute-backend:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      PAQROUTE_PORT: "8080"
+      # Los .txt reales del repo (ventas, bloqueos, mantenimiento) se montan como solo lectura.
+      PAQROUTE_DATA_DIR: /app/data
+      PAQROUTE_FRONTEND_URL: "https://paqroute.paqrap.com"
+      PAQROUTE_LOG_LEVEL_APP: "INFO"
+      PAQROUTE_LOG_FILE: /app/logs/paqroute.log
+      PAQROUTE_LOG_MAX_SIZE: "10MB"
+      PAQROUTE_LOG_MAX_HISTORY: "14"
+    volumes:
+      - ../data:/app/data:ro
+      # Volumen con nombre: permite al usuario sin privilegios escribir y persiste los logs.
+      - paqroute-logs:/app/logs
+
+volumes:
+  paqroute-logs:

@@ -1,0 +1,18 @@
+[Unit]
+Description=PaqRoute Backend (Spring Boot)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+WorkingDirectory=/opt/paqroute
+Environment=PAQROUTE_DATA_DIR=/opt/paqroute/data
+Environment=PAQROUTE_PORT=8080
+Environment=PAQROUTE_LOG_FILE=/var/log/paqroute/paqroute.log
+ExecStart=/usr/bin/java -jar /opt/paqroute/paqroute-backend.jar
+Restart=on-failure
+RestartSec=5
+User=paqroute
+Group=paqroute
+
+[Install]
+WantedBy=multi-user.target
